@@ -17,32 +17,50 @@ Each user receives a unique public link to share their portfolio with recruiters
 
 ---
 
+### Schema Overview:
+
+User
+├── Resume (uploads)
+│ └── ResumeParsedData (structured)
+│
+├── Portfolio
+│ ├── PortfolioSectionConfig
+│ ├── PortfolioThemeConfig
+│ └── PortfolioPublic
+│
+└── AccountSettings
+
 ## 🏗️ Tech Stack
 
 ### Frontend
+
 - Next.js (App Router)
 - Tailwind CSS
 - TypeScript
 
 ### Backend
+
 - Node.js
 - Express.js
 - JWT Authentication
 
 ### Database
+
 - PostgreSQL
 
 ### ORM
+
 - Prisma
 
 ### AI Integration
+
 - OpenAI / Gemini API
 - PDF text extraction
 
 ### File Storage
+
 - Cloudinary
 
 ---
 
 ## 📐 System Architecture
-
