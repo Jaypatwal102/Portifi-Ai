@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant coffee (&:where(.coffee, .coffee *));
+@custom-variant vishal (&:where(.vishal, .vishal *));
+
+@theme {
+  --color-bg: #fffdf1;
+  --color-primary: #ffce99;
+  --color-secondary: #ff9644;
+  --color-suraj: #562f00;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer theme {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+    @variant dark {
+      --color-bg: #574964;
+      --color-primary: #9f8383;
+      --color-secondary: #c8aaaa;
+      --color-suraj: #ffdab3;
+    }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    @variant coffee {
+      --color-bg: #b6ae9f;
+      --color-primary: #c5c7bc;
+      --color-secondary: #deded1;
+      --color-suraj: #fbf3d1;
+    }
+
+    @variant vishal {
+      --color-bg: #0c2c55;
+      --color-primary: #296374;
+      --color-secondary: #629fad;
+      --color-suraj: #ededce;
+    }
+  }
 }
