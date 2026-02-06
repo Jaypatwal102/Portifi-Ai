@@ -1,13 +1,9 @@
-const themes = ["light", "dark", "coffee", "vishal"];
+const themes = ["light", "dark", "coffee"];
 
 export function toggleTheme(theme: string) {
-  document.documentElement.classList.remove(
-    "light",
-    "dark",
-    "coffee",
-    "vishal",
-  );
+  document.documentElement.classList.remove("light", "dark", "coffee");
   document.documentElement.classList.add(theme);
+  localStorage.setItem("theme", theme);
 }
 
 export function getNextTheme() {
