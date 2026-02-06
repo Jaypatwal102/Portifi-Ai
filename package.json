@@ -2,7 +2,6 @@
   "name": "portifi_ai",
   "version": "1.0.0",
   "description": "Portifi AI is a full-stack web application that allows users to upload their resume and automatically generate a personalized portfolio website using AI.  \r Each user receives a unique public link to share their portfolio with recruiters and companies.",
-  "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd client && npm run dev",
