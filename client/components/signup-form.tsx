@@ -19,9 +19,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     <Card {...props}>
       <CardHeader className="flex flex-col items-center">
         {/* logo */}
-        <h1 className="text-prime font-extrabold text-xl">
-          <span>💼</span>Portifi AI
-        </h1>
+        <h1 className="text-prime font-extrabold text-xl">Portifi AI</h1>
         <CardTitle>Create your Account</CardTitle>
       </CardHeader>
       <CardContent>
@@ -52,7 +50,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
             </Field>
             <FieldGroup>
               <Field>
-                <Button className="bg-prime hover:bg-second" type="submit">
+                <Button className="bg-prime hover:bg-prime/85" type="submit">
                   Create Account
                 </Button>
                 <FieldDescription className="px-6 text-center">
