@@ -24,9 +24,7 @@ export function LoginForm({
       <Card className={className}>
         <CardHeader className="flex flex-col items-center">
           {/* logo */}
-          <h1 className="text-prime font-extrabold text-xl">
-            <span>💼</span>Portifi AI
-          </h1>
+          <h1 className="text-prime font-extrabold text-xl">Portifi AI</h1>
           <CardTitle>Welcome Back</CardTitle>
           <CardDescription>Enter your details to log in.</CardDescription>
         </CardHeader>
@@ -55,7 +53,7 @@ export function LoginForm({
                 <Input id="password" type="password" required />
               </Field>
               <Field>
-                <Button className="bg-prime hover:bg-second" type="submit">
+                <Button className="bg-prime hover:bg-prime/85" type="submit">
                   Login
                 </Button>
                 <FieldDescription className="text-center">

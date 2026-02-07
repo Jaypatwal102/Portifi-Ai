@@ -5,26 +5,36 @@
 @custom-variant coffee (&:where(.coffee, .coffee *));
 
 @theme {
-  --color-bg: #ffffff;
-  --color-txt: #000000;
-  --color-prime: #5b23ff;
-  --color-second: #008bff;
+  --color-bg: #fff7ed; /* background */
+  --color-surface: #ffffff; /* cards / sections */
+  --color-txt: #431407; /* primary text */
+  --color-muted: #7c2d12; /* muted text */
+  --color-prime: #ea580c; /* primary (orange) */
+  --color-acnt: #facc15; /* accent (yellow) */
+  --color-bd: #fed7aa;
 }
 
 @layer theme {
   :root {
     @variant dark {
-      --color-bg: #574964;
-      --color-txt: #9f8383;
-      --color-prime: #c8aaaa;
-      --color-second: #8b9cbd;
+      --color-bg: #020617;
+      --color-surface: #0f172a;
+      --color-txt: #e5e7eb;
+      --color-muted: #94a3b8;
+      --color-prime: #38bdf8;
+      --color-acnt: #a78bfa;
+      --color-bd: #1e293b;
     }
 
+    /* ☕ Nature (Coffee) */
     @variant coffee {
-      --color-bg: #b6ae9f;
-      --color-txt: #c5c7bc;
-      --color-prime: #deded1;
-      --color-second: #8b9cbd;
+      --color-bg: #f0fdf4;
+      --color-surface: #ffffff;
+      --color-txt: #064e3b;
+      --color-muted: #6b7280;
+      --color-prime: #16a34a; /* green */
+      --color-acnt: #84cc16; /* lime */
+      --color-bd: #bbf7d0;
     }
   }
 }
