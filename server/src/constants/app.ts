@@ -1,0 +1,28 @@
+export const APP = {
+  DEFAULT_PORT: 5500,
+  ENV: {
+    DEVELOPMENT: "development",
+    PRODUCTION: "production",
+  },
+};
+
+export const HTTP_STATUS = Object.freeze({
+  SUCCESS: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  UNPROCESSABLE_ENTITY: 422,
+
+  INTERNAL_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
+});
+
+export const PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_PAGE_SIZE: 10,
+};
