@@ -9,5 +9,5 @@ const wrapAsync =
 export const authRoutes = (app: Application) => {
   app.post(ROUTES.AUTH.LOGIN, wrapAsync(authController.login));
 
-  app.get(ROUTES.AUTH.SIGNUP, wrapAsync(authController.signup));
+  app.post(ROUTES.AUTH.SIGNUP, wrapAsync(authController.signup));
 };
