@@ -1,44 +1,25 @@
-import { prisma } from "../../../lib/prisma";
-
-interface CreateUserDTO {
-  name?: string | null;
-  email: string;
-  password: string;
-  avatarUrl?: string | null;
-}
+import bcrypt from "bcryptjs";
+import { authDao } from "./dao";
 
 export const authService = {
-  // -------- Used in SIGNUP --------
-  async createUser(data: CreateUserDTO) {
-    return prisma.user.create({
-      data: {
-        name: data.name ?? null,
-        email: data.email,
-        password: data.password,
-        avatarUrl: data.avatarUrl ?? null,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
-    });
+  async hashPassword(password: string) {
+    return bcrypt.hash(password, 10);
   },
 
-  // -------- Used in LOGIN (and signup email check) --------
+  async comparePassword(plain: string, hashed: string) {
+    return bcrypt.compare(plain, hashed);
+  },
+
   async findUserByEmail(email: string) {
-    return prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        password: true, // needed for bcrypt compare in login
-        avatarUrl: true,
-        createdAt: true,
-      },
-    });
+    return authDao.findUserByEmail(email);
+  },
+
+  async createUser(data: {
+    name?: string | null;
+    email: string;
+    password: string;
+    avatarUrl?: string | null;
+  }) {
+    return authDao.createUser(data);
   },
 };

@@ -1,13 +1,12 @@
 import type { Request, Response } from "express";
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import logger from "../../utils/logger";
 import { LOG_MESSAGES } from "../../constants/logger";
 import { ERROR_MESSAGES } from "../../constants/error";
 import { MESSAGES } from "../../constants/response";
 import { HTTP_STATUS } from "../../constants/app";
-import { authService } from "./services.js";
-import { SignupSchema, LoginSchema } from "./types.js";
+import { authService } from "./services";
+import { SignupSchema, LoginSchema } from "./types";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -24,6 +23,7 @@ export const authController = {
       }
 
       const { name, email, password, avatarUrl } = parsed.data;
+
       const existingUser = await authService.findUserByEmail(email);
 
       if (existingUser) {
@@ -32,7 +32,7 @@ export const authController = {
         });
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await authService.hashPassword(password);
 
       const user = await authService.createUser({
         name,
@@ -52,7 +52,6 @@ export const authController = {
       logger.error(LOG_MESSAGES.AUTH.SIGNUP_REQUEST, error);
 
       if (error.code === "P2002") {
-        // Prisma unique constraint error
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           message: ERROR_MESSAGES.AUTH.EMAIL_EXISTS,
         });
@@ -65,7 +64,6 @@ export const authController = {
     }
   },
 
-  // ---------- LOGIN ----------
   async login(req: Request, res: Response) {
     try {
       const parsed = LoginSchema.safeParse(req.body);
@@ -87,7 +85,10 @@ export const authController = {
         });
       }
 
-      const isValid = await bcrypt.compare(password, user.password);
+      const isValid = await authService.comparePassword(
+        password,
+        user.password,
+      );
 
       if (!isValid) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({

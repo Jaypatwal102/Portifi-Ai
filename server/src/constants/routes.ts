@@ -3,7 +3,6 @@ export const API_VERSION = {
 };
 
 export const ROUTES = {
-  // Company Routes
   AUTH: {
     LOGIN: "/login",
     SIGNUP: "/signup",
