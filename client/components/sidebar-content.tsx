@@ -12,6 +12,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { removeToken } from "@/lib/auth/auth";
+import { useRouter } from "next/navigation";
 
 const menu = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -22,6 +24,12 @@ const menu = [
 
 export function SidebarContent({ onClick }: { onClick?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    removeToken();
+    router.replace("/login");
+  };
 
   return (
     <div className="flex h-full flex-col bg-surface">
@@ -68,7 +76,10 @@ export function SidebarContent({ onClick }: { onClick?: () => void }) {
 
       {/* Logout */}
       <div className="px-3 pb-4">
-        <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-500 hover:bg-acnt/30">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-500 hover:bg-acnt/30"
+        >
           <LogOut size={18} />
           Logout
         </button>
