@@ -8,10 +8,11 @@
   --color-bg: #fff7ed; /* background */
   --color-surface: #ffffff; /* cards / sections */
   --color-txt: #431407; /* primary text */
-  --color-muted: #7c2d12; /* muted text */
+  --color-mute: #7c2d12; /* muted text */
   --color-prime: #ea580c; /* primary (orange) */
   --color-acnt: #facc15; /* accent (yellow) */
   --color-bd: #fed7aa;
+  --color-hv: #ea580c;
 }
 
 @layer theme {
@@ -20,10 +21,11 @@
       --color-bg: #020617;
       --color-surface: #0f172a;
       --color-txt: #e5e7eb;
-      --color-muted: #94a3b8;
+      --color-mute: #94a3b8;
       --color-prime: #38bdf8;
       --color-acnt: #a78bfa;
       --color-bd: #1e293b;
+      --color-hv: #38bdf8;
     }
 
     /* ☕ Nature (Coffee) */
@@ -31,10 +33,11 @@
       --color-bg: #f0fdf4;
       --color-surface: #ffffff;
       --color-txt: #064e3b;
-      --color-muted: #6b7280;
+      --color-mute: #6b7280;
       --color-prime: #16a34a; /* green */
       --color-acnt: #84cc16; /* lime */
       --color-bd: #bbf7d0;
+      --color-hv: #16a34a;
     }
   }
 }
