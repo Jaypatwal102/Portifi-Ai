@@ -1,5 +1,6 @@
 "use client";
 
+import { Footer } from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadCloud, ExternalLink, Eye } from "lucide-react";
@@ -22,7 +23,7 @@ export default function PortfolioDashboard() {
       </div>
 
       {/* Portfolio Status */}
-      <Card className="bg-surface border-bd">
+      <Card className="bg-surface border-bd transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg hover:border-primary/40 cursor-pointer">
         <CardHeader>
           <CardTitle>Portfolio Status</CardTitle>
         </CardHeader>
@@ -44,7 +45,7 @@ export default function PortfolioDashboard() {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upload Resume Card */}
-        <Card className="bg-surface border-bd">
+        <Card className="bg-surface border-bd transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg hover:border-primary/40 cursor-pointer">
           <CardHeader>
             <CardTitle>Upload or Update Your Resume</CardTitle>
           </CardHeader>
@@ -82,12 +83,12 @@ export default function PortfolioDashboard() {
         </Card>
 
         {/* Portfolio Preview Card */}
-        <Card className="bg-surface border-bd">
+        <Card className="bg-surface border-bd transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg hover:border-primary/40 cursor-pointer">
           <CardHeader>
             <CardTitle>Portfolio Preview</CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 ">
             <p className="text-sm">
               See how your live portfolio looks before sharing.
             </p>
@@ -117,10 +118,6 @@ export default function PortfolioDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      <p className="text-center text-xs sm:text-sm ">
-        © 2026 Portifi AI. All rights reserved.
-      </p>
     </div>
   );
 }
