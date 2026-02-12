@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 export default function Hero() {
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const [loading] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
+
+  // Play video when demo becomes visible
+  useEffect(() => {
+    if (showDemo && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [showDemo]);
 
   return (
     <section className="max-w-7xl mx-auto px-6 py-24">
@@ -23,15 +35,9 @@ export default function Hero() {
         {/* Buttons */}
         <div className="mt-8 flex gap-4">
           <Button
+            onClick={() => router.push("/dashboard")}
             disabled={loading}
-            className="bg-mute
-              transition-all duration-200 ease-out
-              shadow-lg
-              hover:shadow-2xl
-              hover:-translate-y-px
-              active:translate-y-0
-              active:shadow-lg
-              cursor-pointer"
+            className="bg-mute transition-all duration-200 ease-out shadow-lg hover:shadow-2xl hover:-translate-y-px active:translate-y-0 active:shadow-lg cursor-pointer"
           >
             {loading ? (
               <>
@@ -47,14 +53,7 @@ export default function Hero() {
             variant="outline"
             disabled={showDemo}
             onClick={() => setShowDemo(true)}
-            className="bg-mute
-              transition-all duration-200 ease-out
-              shadow-lg
-              hover:shadow-2xl
-              hover:-translate-y-px
-              active:translate-y-0
-              active:shadow-lg
-              cursor-pointer"
+            className="bg-mute transition-all duration-200 ease-out shadow-lg hover:shadow-2xl hover:-translate-y-px active:translate-y-0 active:shadow-lg cursor-pointer text-white"
           >
             View Demo
           </Button>
@@ -62,53 +61,28 @@ export default function Hero() {
 
         {/* Media Card */}
         <div className="mt-16 w-full flex justify-center">
-          <Card
-            className="border border-bd
-          rounded-xl
-          shadow-lg
-          max-w-2xl
-          w-full
-          transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg cursor-pointer"
-          >
+          <Card className="border border-bd rounded-xl shadow-lg max-w-2xl w-full transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-lg  cursor-pointer">
             <div className="p-3">
-              <div
-                className="
-    relative
-    h-65
-    sm:h-80
-    md:h-96
-    lg:h-110
-    xl:h-125
-    overflow-hidden
-    rounded-lg
-  "
-              >
+              <div className="relative h-65 sm:h-80 md:h-95 lg:h-110 xl:h-125 overflow-hidden rounded-lg">
                 {/* Image */}
                 <Image
                   src="/small.jpg"
                   alt="AI portfolio preview"
                   fill
                   priority
-                  className={`
-      absolute inset-0 object-cover
-      transition-opacity duration-300 ease-in-out
-      ${showDemo ? "opacity-0" : "opacity-100"}
-    `}
+                  className={`absolute inset-0 object-cover transition-opacity duration-300 ease-in-out ${showDemo ? "opacity-0" : "opacity-100"}`}
                 />
 
                 {/* Video */}
                 <video
+                  ref={videoRef}
                   src="/demo.mp4"
-                  muted
                   controls
                   playsInline
-                  autoPlay={showDemo}
                   onEnded={() => setShowDemo(false)}
-                  className={`
-      absolute inset-0 h-full w-full object-cover
-      transition-opacity duration-300 ease-in-out
-      ${showDemo ? "opacity-100" : "opacity-0"}
-    `}
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ease-in-out ${
+                    showDemo ? "opacity-100" : "opacity-0"
+                  }`}
                 />
               </div>
             </div>
