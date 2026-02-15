@@ -6,7 +6,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
-    "start": "tsx dist/src/server.js"
+    "start": "tsx dist/src/server.js",
+    "build": "tsc -b",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:all": "tsx prisma/seeds/seed-all.ts"
   },
   "keywords": [],
   "author": "",
