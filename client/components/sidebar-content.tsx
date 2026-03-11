@@ -33,10 +33,8 @@ export function SidebarContent({ onClick }: { onClick?: () => void }) {
 
   return (
     <div className="flex h-full flex-col bg-surface">
-      {/* Logo */}
       <div className="px-6 py-4 text-xl font-bold text-prime">Portifi AI</div>
 
-      {/* Avatar */}
       <div className="px-4 py-4 flex items-center gap-3">
         <Avatar className="h-10 w-10">
           <AvatarImage src="https://github.com/shadcn.png" />
@@ -51,7 +49,6 @@ export function SidebarContent({ onClick }: { onClick?: () => void }) {
 
       <Separator className="bg-bd" />
 
-      {/* Navigation */}
       <nav className="flex-1 px-3 py-3 space-y-1">
         {menu.map((item) => {
           const active = pathname === item.href;
@@ -63,8 +60,8 @@ export function SidebarContent({ onClick }: { onClick?: () => void }) {
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-acnt/60 text-prime"
-                  : "text-prime/70 hover:bg-acnt/30 hover:text-prime",
+                  ? "bg-prime/12 text-prime"
+                  : "text-mute hover:bg-bg hover:text-txt",
               )}
             >
               <item.icon size={18} />
@@ -74,11 +71,10 @@ export function SidebarContent({ onClick }: { onClick?: () => void }) {
         })}
       </nav>
 
-      {/* Logout */}
       <div className="px-3 pb-4">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-500 hover:bg-acnt/30"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-500 transition-colors hover:bg-bg"
         >
           <LogOut size={18} />
           Logout

@@ -1,17 +1,23 @@
-"use client";
-import { toggleTheme, getNextTheme } from "./utils/theme";
+import { CtaSection } from "@/components/landing/CTA";
+import FeaturesSection from "@/components/landing/FeatureSection";
+import { Footer } from "@/components/landing/Footer";
+import Hero from "@/components/landing/Hero";
+import Navbar from "@/components/landing/Navbar";
+import { TestimonialsSection } from "@/components/landing/Testimonial";
+import { Separator } from "@/components/ui/separator";
 
-export default function Home() {
+function LandingPage() {
   return (
-    <div className="h-screen w-screen bg-bg transition-all ease-in duration-500">
-      <h1 className="text-3xl text-txt font-bold">Portifi Ai</h1>
-      <p className="text-txt font-bold">Sub Heading</p>
-      <button
-        onClick={() => toggleTheme(getNextTheme())}
-        className="mt-4 px-4 py-2 bg-prime text-txt rounded hover:bg-second transition-colors"
-      >
-        toggle Theme
-      </button>
+    <div>
+      <Navbar />
+      <Separator />
+      <Hero />
+      <FeaturesSection />
+      <TestimonialsSection />
+      <CtaSection />
+      <Footer />
     </div>
   );
 }
+
+export default LandingPage;

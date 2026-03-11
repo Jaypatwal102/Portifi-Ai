@@ -1,7 +1,13 @@
-const themes = ["light", "dark", "coffee"];
+export const themes = ["light", "dark", "coffee", "modern"] as const;
+export type Theme = (typeof themes)[number];
 
-export function toggleTheme(theme: string) {
-  document.documentElement.classList.remove("light", "dark", "coffee");
+export function toggleTheme(theme: Theme) {
+  document.documentElement.classList.remove(
+    "light",
+    "dark",
+    "coffee",
+    "modern",
+  );
   document.documentElement.classList.add(theme);
   localStorage.setItem("theme", theme);
 }
@@ -15,4 +21,14 @@ export function getNextTheme() {
     }
   }
   return themes[(ind + 1) % themes.length];
+}
+
+export function getCurrentTheme(): Theme {
+  for (const theme of themes) {
+    if (document.documentElement.classList.contains(theme)) {
+      return theme;
+    }
+  }
+
+  return "light";
 }

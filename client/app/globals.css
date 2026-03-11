@@ -3,6 +3,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant coffee (&:where(.coffee, .coffee *));
+@custom-variant modern (&:where(.modern, .modern *));
 
 @theme {
   --color-bg: #fff7ed; /* background */
@@ -38,6 +39,17 @@
       --color-acnt: #84cc16; /* lime */
       --color-bd: #bbf7d0;
       --color-hv: #16a34a;
+    }
+
+    @variant modern {
+      --color-bg: #0f172a;
+      --color-surface: #111827;
+      --color-txt: #f8fafc;
+      --color-mute: #94a3b8;
+      --color-prime: #f43f5e;
+      --color-acnt: #22d3ee;
+      --color-bd: #1f2937;
+      --color-hv: #fb7185;
     }
   }
 }

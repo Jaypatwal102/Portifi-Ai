@@ -10,13 +10,10 @@ export default function DashboardLayout({
   return (
     <ProtectedRoutes>
       <div className="min-h-screen">
-        {/* Desktop sidebar */}
         <SidebarDesktop />
 
-        {/* Main content */}
         <div className="md:pl-64">
-          {/* Mobile header */}
-          <header className="flex items-center gap-3 border-b bg-surface px-4 py-3 md:hidden">
+          <header className="flex items-center gap-3 border-b border-bd bg-surface px-4 py-3 md:hidden">
             <SidebarMobile />
             <span className="font-semibold text-txt">Portifi AI</span>
           </header>
