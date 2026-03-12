@@ -1,6 +1,10 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export function CtaSection() {
+  const router = useRouter();
   return (
     <section className="py-24">
       <div className="max-w-3xl mx-auto text-center px-6">
@@ -10,6 +14,7 @@ export function CtaSection() {
 
         <div className="mt-8">
           <Button
+            onClick={() => router.push("/dashboard")}
             className="
               px-8
               py-6
