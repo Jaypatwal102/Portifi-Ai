@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { authDao } from "./dao";
+import { authDao } from "./dao.js";
 
 export const authService = {
   async hashPassword(password: string) {

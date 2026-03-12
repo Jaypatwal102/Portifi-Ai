@@ -1,16 +1,22 @@
 {
   "name": "portifi_ai",
   "version": "1.0.0",
+  "private": true,
   "description": "Portifi AI is a full-stack web application that allows users to upload their resume and automatically generate a personalized portfolio website using AI.  \r Each user receives a unique public link to share their portfolio with recruiters and companies.",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd client && npm run dev",
-    "dev:backend": "cd server && npm run dev",
+    "dev:frontend": "npm --prefix client run dev",
+    "dev:backend": "npm --prefix server run dev",
     "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "cd client && npm run build",
-    "build:backend": "cd server && npm run build",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
-    "db:setup": "cd server && npm run db:generate && npm run db:push"
+    "build:frontend": "npm --prefix client run build",
+    "build:backend": "npm --prefix server run build",
+    "start:frontend": "npm --prefix client run start",
+    "start:backend": "npm --prefix server run start",
+    "install:all": "npm install && npm --prefix client install && npm --prefix server install",
+    "db:setup": "npm --prefix server run db:generate && npm --prefix server run db:push"
   },
   "repository": {
     "type": "git",

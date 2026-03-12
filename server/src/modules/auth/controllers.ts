@@ -1,14 +1,15 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import logger from "../../utils/logger";
-import { LOG_MESSAGES } from "../../constants/logger";
-import { ERROR_MESSAGES } from "../../constants/error";
-import { MESSAGES } from "../../constants/response";
-import { HTTP_STATUS } from "../../constants/app";
-import { authService } from "./services";
-import { SignupSchema, LoginSchema } from "./types";
+import logger from "../../utils/logger.js";
+import { LOG_MESSAGES } from "../../constants/logger.js";
+import { ERROR_MESSAGES } from "../../constants/error.js";
+import { MESSAGES } from "../../constants/response.js";
+import { HTTP_STATUS } from "../../constants/app.js";
+import { authService } from "./services.js";
+import { SignupSchema, LoginSchema } from "./types.js";
+import { getJwtSecret } from "../../utils/env.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+const JWT_SECRET = getJwtSecret();
 
 export const authController = {
   async signup(req: Request, res: Response) {

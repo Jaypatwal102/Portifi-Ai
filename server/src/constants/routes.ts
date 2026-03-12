@@ -7,4 +7,8 @@ export const ROUTES = {
     LOGIN: "/login",
     SIGNUP: "/signup",
   },
+
+  RESUME: {
+    RESUME: "/resume",
+  },
 };

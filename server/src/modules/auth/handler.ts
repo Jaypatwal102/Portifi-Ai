@@ -1,6 +1,6 @@
 import type { Application, Request, Response, NextFunction } from "express";
-import { ROUTES } from "../../constants/routes";
-import { authController } from "./controllers";
+import { ROUTES } from "../../constants/routes.js";
+import { authController } from "./controllers.js";
 const wrapAsync =
   (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
   (req: Request, res: Response, next: NextFunction) =>
