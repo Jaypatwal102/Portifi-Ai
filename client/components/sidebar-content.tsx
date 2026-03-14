@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  FileText,
   Briefcase,
   Layers,
   Settings,
@@ -17,6 +18,7 @@ import { useRouter } from "next/navigation";
 
 const menu = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Resumes", href: "/resumes", icon: FileText },
   { name: "My Portfolio", href: "/portfolio", icon: Briefcase },
   { name: "Templates", href: "/templates", icon: Layers },
   { name: "Settings", href: "/settings", icon: Settings },

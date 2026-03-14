@@ -1,75 +1,48 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadCloud, ExternalLink, Eye, FileText } from "lucide-react";
-import mammoth from "mammoth";
+import { UploadCloud, ExternalLink, Eye } from "lucide-react";
 import Image from "next/image";
-import { useState, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 
 export default function PortfolioDashboard() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractMessage, setExtractMessage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleResumeSelect = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleResumeSelect = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setResumeFile(file);
-    setExtractMessage(file ? null : "Please upload a resume first.");
-  };
 
-  const handleExtractResume = async () => {
-    if (!resumeFile) return;
+    if (!file) {
+      setUploadMessage("Please upload a resume first.");
+      return;
+    }
 
-    setIsExtracting(true);
-    setExtractMessage("Extracting resume details...");
+    setIsUploading(true);
+    setUploadMessage("Uploading resume...");
 
     try {
-      const extension = resumeFile.name.split(".").pop()?.toLowerCase();
-      let extractedText = "";
+      const formData = new FormData();
+      formData.append("file", file);
 
-      if (extension === "docx" || extension === "doc") {
-        const arrayBuffer = await resumeFile.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        extractedText = result.value.trim();
-      } else if (extension === "pdf") {
-        const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          "pdfjs-dist/build/pdf.worker.min.mjs",
-          import.meta.url,
-        ).toString();
+      await apiFetch<{ message: string; data: { id: string } }>("/resume", {
+        method: "POST",
+        body: formData,
+      });
 
-        const arrayBuffer = await resumeFile.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-        const pages = await Promise.all(
-          Array.from({ length: pdf.numPages }, async (_, index) => {
-            const page = await pdf.getPage(index + 1);
-            const textContent = await page.getTextContent();
-
-            return textContent.items
-              .map((item) => ("str" in item ? item.str : ""))
-              .join(" ");
-          }),
-        );
-
-        extractedText = pages.join("\n").trim();
-      } else {
-        throw new Error("Unsupported file type. Please upload a PDF or DOCX resume.");
-      }
-
-      console.log("Extracted Resume Text:", extractedText);
-      setExtractMessage(
-        extractedText
-          ? `Resume text extracted from ${resumeFile.name}. Check the console.`
-          : `No text could be extracted from ${resumeFile.name}.`,
-      );
+      setUploadMessage(`Resume uploaded successfully: ${file.name}`);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to extract resume text.";
-      console.error("Resume extraction failed:", error);
-      setExtractMessage(message);
+        error instanceof Error ? error.message : "Failed to upload resume.";
+      console.error("Resume upload failed:", error);
+      setUploadMessage(message);
     } finally {
-      setIsExtracting(false);
+      event.target.value = "";
+      setIsUploading(false);
     }
   };
 
@@ -124,6 +97,7 @@ export default function PortfolioDashboard() {
             </p>
 
             <input
+              ref={inputRef}
               type="file"
               id="resumeUpload"
               accept=".pdf,.doc,.docx"
@@ -133,30 +107,21 @@ export default function PortfolioDashboard() {
 
             <Button
               className="w-full bg-prime text-bg hover:opacity-90"
-              onClick={() => document.getElementById("resumeUpload")?.click()}
+              onClick={() => inputRef.current?.click()}
+              disabled={isUploading}
             >
               <UploadCloud className="mr-2 h-4 w-4" />
-              Upload Resume
+              {isUploading ? "Uploading Resume..." : "Upload Resume"}
             </Button>
 
             {resumeFile && (
               <p className="text-sm text-prime">Selected: {resumeFile.name}</p>
             )}
 
-            <p className="text-xs text-mute">Supported formats: PDF, DOCX</p>
+            <p className="text-xs text-mute">Supported formats: PDF, DOC, DOCX</p>
 
-            <Button
-              variant="outline"
-              className="mt-8 w-full border-bd bg-bg text-txt hover:border-prime/40 hover:bg-bg hover:text-prime disabled:border-bd disabled:bg-bg disabled:text-mute"
-              disabled={!resumeFile || isExtracting}
-              onClick={handleExtractResume}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              {isExtracting ? "Extracting Resume..." : "Extract Resume"}
-            </Button>
-
-            {extractMessage && (
-              <p className="text-sm text-mute">{extractMessage}</p>
+            {uploadMessage && (
+              <p className="text-sm text-mute">{uploadMessage}</p>
             )}
           </CardContent>
         </Card>

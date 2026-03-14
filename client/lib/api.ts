@@ -13,11 +13,12 @@ export async function apiFetch<T>(
   const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const isFormData = options.body instanceof FormData;
 
   const res = await fetch(`${BASE_URL}${normalizedEndpoint}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },

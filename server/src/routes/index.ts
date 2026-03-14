@@ -1,11 +1,13 @@
 import express from "express";
 import { type Application } from "express";
 import { authRoutes } from "../modules/auth/handler.js";
+import { resumeHandler } from "../modules/resume/handler.js";
 import { API_VERSION } from "../constants/routes.js";
 const initV1Routes = (): express.Router => {
   const router = express.Router();
   const routerAsApp = router as Application;
   authRoutes(routerAsApp);
+  resumeHandler(routerAsApp);
   return router;
 };
 

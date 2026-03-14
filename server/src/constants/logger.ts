@@ -21,4 +21,12 @@ export const LOG_MESSAGES = {
     LOGOUT_FAILURE: "Error during user logout",
     TOKEN_REFRESH_FAILURE: "Error refreshing authentication token",
   },
+  RESUME: {
+    UPLOAD_REQUEST: "Received request to upload resume",
+    UPLOAD_SUCCESS: "Resume uploaded successfully",
+    UPLOAD_FAILURE: "Error during resume upload",
+    PARSE_REQUEST: "Received request to parse resume",
+    PARSE_SUCCESS: "Resume parsed successfully",
+    PARSE_FAILURE: "Error during resume parsing",
+  },
 };

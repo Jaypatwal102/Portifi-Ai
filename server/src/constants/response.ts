@@ -5,4 +5,8 @@ export const MESSAGES = {
     LOGOUT_SUCCESS: "Logged out successfully",
     TOKEN_REFRESH_SUCCESS: "Token refreshed successfully",
   },
+  RESUME: {
+    UPLOAD_SUCCESS: "Resume uploaded successfully",
+    PARSE_SUCCESS: "Resume parsed successfully",
+  },
 };

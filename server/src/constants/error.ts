@@ -11,4 +11,12 @@ export const ERROR_MESSAGES = {
     LOGIN_FAILED: "Failed to login user",
     LOGOUT_FAILED: "Failed to logout user",
   },
+  RESUME: {
+    NO_FILE_UPLOADED: "No resume file uploaded",
+    INVALID_FILE_TYPE: "Only PDF, DOC, and DOCX resumes are allowed",
+    UPLOAD_FAILED: "Failed to upload resume",
+    CLOUDINARY_CONFIG_MISSING: "Cloudinary configuration is missing",
+    NOT_FOUND: "Resume not found",
+    PARSE_FAILED: "Failed to parse resume",
+  },
 };
