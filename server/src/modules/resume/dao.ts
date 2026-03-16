@@ -36,6 +36,19 @@ export const resumeDao = {
         fileHash: true,
         status: true,
         uploadedAt: true,
+        parsedData: {
+          select: {
+            id: true,
+            resumeId: true,
+            basics: true,
+            skills: true,
+            experience: true,
+            education: true,
+            projects: true,
+            socials: true,
+            updatedAt: true,
+          },
+        },
       },
       orderBy: {
         uploadedAt: "desc",
@@ -57,6 +70,19 @@ export const resumeDao = {
         fileHash: true,
         status: true,
         uploadedAt: true,
+        parsedData: {
+          select: {
+            id: true,
+            resumeId: true,
+            basics: true,
+            skills: true,
+            experience: true,
+            education: true,
+            projects: true,
+            socials: true,
+            updatedAt: true,
+          },
+        },
       },
     });
   },
@@ -90,6 +116,34 @@ export const resumeDao = {
         resumeId,
         ...parsedData,
       },
+      select: {
+        id: true,
+        resumeId: true,
+        basics: true,
+        skills: true,
+        experience: true,
+        education: true,
+        projects: true,
+        socials: true,
+        updatedAt: true,
+      },
+    });
+  },
+
+  async updateParsedData(
+    resumeId: string,
+    parsedData: {
+      basics: Prisma.InputJsonValue;
+      skills: Prisma.InputJsonValue;
+      experience: Prisma.InputJsonValue;
+      education: Prisma.InputJsonValue;
+      projects: Prisma.InputJsonValue;
+      socials: Prisma.InputJsonValue;
+    },
+  ) {
+    return prisma.resumeParsedData.update({
+      where: { resumeId },
+      data: parsedData,
       select: {
         id: true,
         resumeId: true,

@@ -30,6 +30,12 @@ export const resumeHandler = (app: Application) => {
     wrapAsync(resumeController.parseResume),
   );
 
+  app.put(
+    ROUTES.RESUME.RESUME_PARSED_DATA,
+    authMiddleware,
+    wrapAsync(resumeController.updateParsedData),
+  );
+
   app.post(
     ROUTES.RESUME.RESUME,
     authMiddleware,

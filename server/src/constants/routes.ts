@@ -11,5 +11,6 @@ export const ROUTES = {
     RESUME: "/resume",
     RESUME_BY_ID: "/resume/:id",
     RESUME_PARSE: "/resume/:id/parse",
+    RESUME_PARSED_DATA: "/resume/:id/parsed-data",
   },
 };

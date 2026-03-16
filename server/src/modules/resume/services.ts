@@ -2,6 +2,7 @@ import crypto from "crypto";
 import mammoth from "mammoth";
 import path from "path";
 import { Prisma, ResumeStatus } from "../../../generated/prisma/client.js";
+import { finalOutputSchema, type FinalOutput } from "../../agent/schema.js";
 import { askStructured } from "../../agent/generate_data.js";
 import {
   getSignedResumeDownloadUrl,
@@ -119,5 +120,35 @@ export const resumeService = {
       await resumeDao.updateResumeStatus(resumeId, ResumeStatus.FAILED);
       throw error;
     }
+  },
+
+  async updateParsedData(
+    userId: string,
+    resumeId: string,
+    parsedDataInput: FinalOutput,
+  ) {
+    const resume = await resumeDao.findResumeByIdAndUserId(resumeId, userId);
+
+    if (!resume) {
+      return null;
+    }
+
+    const parsedData = finalOutputSchema.parse(parsedDataInput);
+
+    const updatedParsedData = await resumeDao.updateParsedData(resumeId, {
+      basics: parsedData.basics as Prisma.InputJsonValue,
+      skills: parsedData.skills as Prisma.InputJsonValue,
+      experience: parsedData.experience as Prisma.InputJsonValue,
+      education: parsedData.education as Prisma.InputJsonValue,
+      projects: parsedData.projects as Prisma.InputJsonValue,
+      socials: parsedData.socials as Prisma.InputJsonValue,
+    });
+
+    await resumeDao.updateResumeStatus(resumeId, ResumeStatus.PARSED);
+
+    return {
+      resumeId,
+      parsedData: updatedParsedData,
+    };
   },
 };
