@@ -46,7 +46,12 @@ export const resumeController = {
     } catch (error: any) {
       logger.error(LOG_MESSAGES.RESUME.PARSE_FAILURE, error);
 
-      return res.status(HTTP_STATUS.INTERNAL_ERROR).json({
+      const statusCode =
+        error.message === ERROR_MESSAGES.RESUME.PARSE_ALREADY_IN_PROGRESS
+          ? HTTP_STATUS.CONFLICT
+          : HTTP_STATUS.INTERNAL_ERROR;
+
+      return res.status(statusCode).json({
         message: ERROR_MESSAGES.RESUME.PARSE_FAILED,
         error: error.message,
       });
@@ -131,6 +136,103 @@ export const resumeController = {
 
       return res.status(HTTP_STATUS.INTERNAL_ERROR).json({
         message: ERROR_MESSAGES.RESUME.UPLOAD_FAILED,
+        error: error.message,
+      });
+    }
+  },
+
+  async deleteResume(req: AuthenticatedRequest, res: Response) {
+    try {
+      logger.info(LOG_MESSAGES.RESUME.DELETE_REQUEST);
+
+      const userId = req.user?.userId;
+      const resumeId =
+        typeof req.params.id === "string" ? req.params.id : req.params.id?.[0];
+
+      if (!userId) {
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          message: ERROR_MESSAGES.AUTH.UNAUTHORIZED,
+        });
+      }
+
+      if (!resumeId) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          message: ERROR_MESSAGES.RESUME.NOT_FOUND,
+        });
+      }
+
+      const deletedResume = await resumeService.deleteResume(userId, resumeId);
+
+      if (!deletedResume) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          message: ERROR_MESSAGES.RESUME.NOT_FOUND,
+        });
+      }
+
+      logger.info(LOG_MESSAGES.RESUME.DELETE_SUCCESS, { resumeId });
+
+      return res.status(HTTP_STATUS.SUCCESS).json({
+        message: MESSAGES.RESUME.DELETE_SUCCESS,
+        data: {
+          resumeId,
+        },
+      });
+    } catch (error: any) {
+      logger.error(LOG_MESSAGES.RESUME.DELETE_FAILURE, error);
+
+      return res.status(HTTP_STATUS.INTERNAL_ERROR).json({
+        message: ERROR_MESSAGES.RESUME.DELETE_FAILED,
+        error: error.message,
+      });
+    }
+  },
+
+  async reuploadResume(req: AuthenticatedRequest, res: Response) {
+    try {
+      logger.info(LOG_MESSAGES.RESUME.REUPLOAD_REQUEST);
+
+      const userId = req.user?.userId;
+      const file = req.file;
+      const resumeId =
+        typeof req.params.id === "string" ? req.params.id : req.params.id?.[0];
+
+      if (!userId) {
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          message: ERROR_MESSAGES.AUTH.UNAUTHORIZED,
+        });
+      }
+
+      if (!resumeId) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          message: ERROR_MESSAGES.RESUME.NOT_FOUND,
+        });
+      }
+
+      if (!file) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          message: ERROR_MESSAGES.RESUME.NO_FILE_UPLOADED,
+        });
+      }
+
+      const resume = await resumeService.replaceResume({ userId, resumeId, file });
+
+      if (!resume) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          message: ERROR_MESSAGES.RESUME.NOT_FOUND,
+        });
+      }
+
+      logger.info(LOG_MESSAGES.RESUME.REUPLOAD_SUCCESS, { resumeId });
+
+      return res.status(HTTP_STATUS.SUCCESS).json({
+        message: MESSAGES.RESUME.REUPLOAD_SUCCESS,
+        data: resume,
+      });
+    } catch (error: any) {
+      logger.error(LOG_MESSAGES.RESUME.REUPLOAD_FAILURE, error);
+
+      return res.status(HTTP_STATUS.INTERNAL_ERROR).json({
+        message: ERROR_MESSAGES.RESUME.REUPLOAD_FAILED,
         error: error.message,
       });
     }

@@ -15,8 +15,12 @@ export const ERROR_MESSAGES = {
     NO_FILE_UPLOADED: "No resume file uploaded",
     INVALID_FILE_TYPE: "Only PDF, DOC, and DOCX resumes are allowed",
     UPLOAD_FAILED: "Failed to upload resume",
+    DELETE_FAILED: "Failed to delete resume",
+    REUPLOAD_FAILED: "Failed to replace resume",
     CLOUDINARY_CONFIG_MISSING: "Cloudinary configuration is missing",
     NOT_FOUND: "Resume not found",
     PARSE_FAILED: "Failed to parse resume",
+    PARSE_ALREADY_IN_PROGRESS: "Resume parsing is already in progress",
+    EMPTY_TEXT: "Could not extract text from the uploaded resume",
   },
 };

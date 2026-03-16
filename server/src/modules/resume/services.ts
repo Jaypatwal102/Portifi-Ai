@@ -2,9 +2,11 @@ import crypto from "crypto";
 import mammoth from "mammoth";
 import path from "path";
 import { Prisma, ResumeStatus } from "../../../generated/prisma/client.js";
+import { ERROR_MESSAGES } from "../../constants/error.js";
 import { finalOutputSchema, type FinalOutput } from "../../agent/schema.js";
 import { askStructured } from "../../agent/generate_data.js";
 import {
+  deleteResumeFromCloudinary,
   getSignedResumeDownloadUrl,
   uploadResumeToCloudinary,
 } from "../../utils/cloudinary.js";
@@ -87,6 +89,10 @@ export const resumeService = {
       return null;
     }
 
+    if (resume.status === ResumeStatus.PARSING) {
+      throw new Error(ERROR_MESSAGES.RESUME.PARSE_ALREADY_IN_PROGRESS);
+    }
+
     await resumeDao.updateResumeStatus(resumeId, ResumeStatus.PARSING);
 
     try {
@@ -99,6 +105,11 @@ export const resumeService = {
 
       const fileBuffer = Buffer.from(await response.arrayBuffer());
       const resumeText = await extractResumeText(resume.fileType, fileBuffer);
+
+      if (!resumeText) {
+        throw new Error(ERROR_MESSAGES.RESUME.EMPTY_TEXT);
+      }
+
       const parsed = await askStructured(resumeText);
 
       const parsedData = await resumeDao.upsertParsedData(resumeId, {
@@ -118,6 +129,50 @@ export const resumeService = {
       };
     } catch (error) {
       await resumeDao.updateResumeStatus(resumeId, ResumeStatus.FAILED);
+      throw error;
+    }
+  },
+
+  async deleteResume(userId: string, resumeId: string) {
+    const resume = await resumeDao.findResumeByIdAndUserId(resumeId, userId);
+
+    if (!resume) {
+      return null;
+    }
+
+    await deleteResumeFromCloudinary(resume.fileUrl);
+    await resumeDao.deleteResumeByIdAndUserId(resumeId, userId);
+
+    return resume;
+  },
+
+  async replaceResume({ userId, resumeId, file }: CreateResumeInput & { resumeId: string }) {
+    const resume = await resumeDao.findResumeByIdAndUserId(resumeId, userId);
+
+    if (!resume) {
+      return null;
+    }
+
+    const fileHash = calculateFileHash(file.buffer);
+    const fileType = getNormalizedFileType(file.mimetype, file.originalname);
+    const cloudinaryUpload = await uploadResumeToCloudinary(file, userId);
+
+    try {
+      const updatedResume = await resumeDao.replaceResume({
+        id: resumeId,
+        userId,
+        fileUrl: cloudinaryUpload.secure_url,
+        fileType,
+        fileHash,
+      });
+
+      await deleteResumeFromCloudinary(resume.fileUrl);
+
+      return updatedResume;
+    } catch (error) {
+      await deleteResumeFromCloudinary(cloudinaryUpload.secure_url).catch(() => {
+        return null;
+      });
       throw error;
     }
   },

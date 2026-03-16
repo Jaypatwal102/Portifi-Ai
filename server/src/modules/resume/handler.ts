@@ -12,6 +12,26 @@ const wrapAsync =
     fn(req, res, next).catch(next);
 
 export const resumeHandler = (app: Application) => {
+  const handleUploadError = (
+    error: unknown,
+    _req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    if (error instanceof multer.MulterError) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    if (error instanceof Error) {
+      return res.status(400).json({
+        message: ERROR_MESSAGES.RESUME.INVALID_FILE_TYPE,
+        error: error.message,
+      });
+    }
+
+    next();
+  };
+
   app.get(
     ROUTES.RESUME.RESUME,
     authMiddleware,
@@ -40,20 +60,21 @@ export const resumeHandler = (app: Application) => {
     ROUTES.RESUME.RESUME,
     authMiddleware,
     resumeUpload.single("file"),
-    (error: unknown, _req: Request, res: Response, next: NextFunction) => {
-      if (error instanceof multer.MulterError) {
-        return res.status(400).json({ message: error.message });
-      }
-
-      if (error instanceof Error) {
-        return res.status(400).json({
-          message: ERROR_MESSAGES.RESUME.INVALID_FILE_TYPE,
-          error: error.message,
-        });
-      }
-
-      next();
-    },
+    handleUploadError,
     wrapAsync(resumeController.uploadResume),
+  );
+
+  app.put(
+    ROUTES.RESUME.RESUME_REUPLOAD,
+    authMiddleware,
+    resumeUpload.single("file"),
+    handleUploadError,
+    wrapAsync(resumeController.reuploadResume),
+  );
+
+  app.delete(
+    ROUTES.RESUME.RESUME_BY_ID,
+    authMiddleware,
+    wrapAsync(resumeController.deleteResume),
   );
 };

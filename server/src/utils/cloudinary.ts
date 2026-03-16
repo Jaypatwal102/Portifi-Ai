@@ -21,6 +21,18 @@ const ensureCloudinaryConfig = () => {
   }
 };
 
+const getPublicIdFromUrl = (fileUrl: string) => {
+  const url = new URL(fileUrl);
+  const uploadSegmentIndex = url.pathname.indexOf("/upload/");
+
+  if (uploadSegmentIndex === -1) {
+    throw new Error("Invalid Cloudinary resume URL");
+  }
+
+  const uploadPath = url.pathname.slice(uploadSegmentIndex + "/upload/".length);
+  return uploadPath.replace(/^v\d+\//, "");
+};
+
 export const uploadResumeToCloudinary = (
   file: Express.Multer.File,
   userId: string,
@@ -58,21 +70,23 @@ export const uploadResumeToCloudinary = (
 
 export const getSignedResumeDownloadUrl = (fileUrl: string) => {
   ensureCloudinaryConfig();
-
-  const url = new URL(fileUrl);
-  const versionSegmentIndex = url.pathname.indexOf("/upload/");
-
-  if (versionSegmentIndex === -1) {
-    throw new Error("Invalid Cloudinary resume URL");
-  }
-
-  const uploadPath = url.pathname.slice(versionSegmentIndex + "/upload/".length);
-  const publicId = uploadPath.replace(/^v\d+\//, "");
+  const publicId = getPublicIdFromUrl(fileUrl);
 
   return cloudinary.url(publicId, {
     resource_type: "raw",
     type: "upload",
     secure: true,
     sign_url: true,
+  });
+};
+
+export const deleteResumeFromCloudinary = async (fileUrl: string) => {
+  ensureCloudinaryConfig();
+
+  const publicId = getPublicIdFromUrl(fileUrl);
+  return cloudinary.uploader.destroy(publicId, {
+    resource_type: "raw",
+    type: "upload",
+    invalidate: true,
   });
 };

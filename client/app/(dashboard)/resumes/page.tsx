@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,13 +20,20 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
   ExternalLink,
   FileText,
+  Files,
+  LoaderCircle,
   Plus,
   RefreshCw,
   Save,
+  ShieldCheck,
   Trash2,
   UploadCloud,
+  XCircle,
 } from "lucide-react";
 
 type Basics = {
@@ -100,6 +113,18 @@ type ResumeMutationResponse = {
   data: {
     resumeId: string;
     parsedData: ParsedResumeData;
+  };
+};
+
+type ResumeWriteResponse = {
+  message: string;
+  data: ResumeItem;
+};
+
+type ResumeDeleteResponse = {
+  message: string;
+  data: {
+    resumeId: string;
   };
 };
 
@@ -283,6 +308,119 @@ const formatForSave = (data: ParsedResumeData) => ({
   socials: data.socials,
 });
 
+const getTrimmedValue = (value: string) => value.trim();
+
+const isValidUrl = (value: string) => {
+  if (!value.trim()) {
+    return false;
+  }
+
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const validateParsedData = (data: ParsedResumeData) => {
+  const errors: string[] = [];
+
+  if (!getTrimmedValue(data.basics.name)) {
+    errors.push("Full name is required.");
+  }
+
+  data.experience.forEach((item, index) => {
+    if (!getTrimmedValue(item.company) || !getTrimmedValue(item.role)) {
+      errors.push(`Experience ${index + 1} needs both company and role.`);
+    }
+  });
+
+  data.education.forEach((item, index) => {
+    if (!getTrimmedValue(item.institution) || !getTrimmedValue(item.degree)) {
+      errors.push(`Education ${index + 1} needs both institution and degree.`);
+    }
+  });
+
+  data.projects.forEach((item, index) => {
+    if (!getTrimmedValue(item.name)) {
+      errors.push(`Project ${index + 1} needs a project name.`);
+    }
+
+    if (getTrimmedValue(item.link) && !isValidUrl(item.link)) {
+      errors.push(`Project ${index + 1} link must be a valid URL.`);
+    }
+  });
+
+  data.socials.forEach((item, index) => {
+    if (!getTrimmedValue(item.platform) || !getTrimmedValue(item.url)) {
+      errors.push(`Social link ${index + 1} needs both platform and URL.`);
+      return;
+    }
+
+    if (!isValidUrl(item.url)) {
+      errors.push(`Social link ${index + 1} URL must be valid.`);
+    }
+  });
+
+  return errors;
+};
+
+const getStatusTone = (status: string) => {
+  switch (status) {
+    case "PARSED":
+      return "bg-emerald-500/10 text-emerald-600";
+    case "FAILED":
+      return "bg-red-500/10 text-red-600";
+    case "PARSING":
+      return "bg-amber-500/10 text-amber-600";
+    default:
+      return "bg-prime/10 text-prime";
+  }
+};
+
+const getStatusMessage = (resume: ResumeItem) => {
+  if (resume.status === "FAILED") {
+    return "Parsing failed previously. Retry parsing or replace the file.";
+  }
+
+  if (resume.status === "PARSING") {
+    return "Resume parsing is in progress.";
+  }
+
+  if (resume.parsedData) {
+    return "Parsed data is saved and ready to review.";
+  }
+
+  return "Upload complete. Parse the file to extract editable data.";
+};
+
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case "PARSED":
+      return "Ready";
+    case "FAILED":
+      return "Needs attention";
+    case "PARSING":
+      return "In progress";
+    default:
+      return "Uploaded";
+  }
+};
+
+const getResumeStats = (resumes: ResumeItem[]) => {
+  const parsed = resumes.filter((resume) => resume.status === "PARSED").length;
+  const parsing = resumes.filter((resume) => resume.status === "PARSING").length;
+  const failed = resumes.filter((resume) => resume.status === "FAILED").length;
+
+  return {
+    total: resumes.length,
+    parsed,
+    parsing,
+    failed,
+  };
+};
+
 function SectionHeader({
   title,
   description,
@@ -308,19 +446,33 @@ export default function ResumesPage() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageTone, setMessageTone] = useState<"default" | "error">("default");
   const [parsingResumeId, setParsingResumeId] = useState<string | null>(null);
+  const [deletingResumeId, setDeletingResumeId] = useState<string | null>(null);
+  const [reuploadingResumeId, setReuploadingResumeId] = useState<string | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
-  const [editorData, setEditorData] = useState<ParsedResumeData>(emptyParsedData);
+  const [editorData, setEditorData] = useState<ParsedResumeData>(
+    emptyParsedData,
+  );
   const [isSaving, setIsSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const pendingReplaceResumeId = useRef<string | null>(null);
 
   const activeResume =
     resumes.find((resume) => resume.id === activeResumeId) ?? null;
+  const resumeStats = getResumeStats(resumes);
 
-  const loadResumes = async () => {
-    setIsLoading(true);
+  const loadResumes = async (options?: { silent?: boolean }) => {
+    if (options?.silent) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
 
     try {
       const response = await apiFetch<ResumeListResponse>("/resume");
@@ -333,12 +485,15 @@ export default function ResumesPage() {
         })),
       );
       setMessage(null);
+      setValidationErrors([]);
     } catch (error) {
+      setMessageTone("error");
       setMessage(
         error instanceof Error ? error.message : "Failed to load resumes.",
       );
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -348,7 +503,10 @@ export default function ResumesPage() {
 
   const openEditor = (resumeId: string, parsedData: ParsedResumeData | null) => {
     setActiveResumeId(resumeId);
-    setEditorData(parsedData ? normalizeParsedData(parsedData) : emptyParsedData());
+    setEditorData(
+      parsedData ? normalizeParsedData(parsedData) : emptyParsedData(),
+    );
+    setValidationErrors([]);
     setIsEditorOpen(true);
   };
 
@@ -366,15 +524,42 @@ export default function ResumesPage() {
     );
   };
 
+  const upsertResumeInState = (resume: ResumeItem) => {
+    setResumes((current) => {
+      const normalizedResume = {
+        ...resume,
+        parsedData: resume.parsedData
+          ? normalizeParsedData(resume.parsedData)
+          : null,
+      };
+
+      const existingIndex = current.findIndex((item) => item.id === resume.id);
+
+      if (existingIndex === -1) {
+        return [normalizedResume, ...current];
+      }
+
+      return current.map((item) =>
+        item.id === resume.id ? normalizedResume : item,
+      );
+    });
+  };
+
   const handleParseResume = async (resume: ResumeItem) => {
-    if (resume.parsedData) {
+    if (resume.parsedData && resume.status === "PARSED") {
       openEditor(resume.id, resume.parsedData);
+      setMessageTone("default");
       setMessage("Loaded saved parsed data.");
       return;
     }
 
     setParsingResumeId(resume.id);
-    setMessage("Parsing resume...");
+    setMessageTone("default");
+    setMessage(
+      resume.status === "FAILED"
+        ? "Retrying resume parsing..."
+        : "Parsing resume...",
+    );
 
     try {
       const response = await apiFetch<ResumeMutationResponse>(
@@ -386,8 +571,14 @@ export default function ResumesPage() {
       openEditor(resume.id, parsedData);
       setMessage("Resume parsed and opened for editing.");
     } catch (error) {
+      setMessageTone("error");
       setMessage(
         error instanceof Error ? error.message : "Failed to parse resume.",
+      );
+      setResumes((current) =>
+        current.map((item) =>
+          item.id === resume.id ? { ...item, status: "FAILED" } : item,
+        ),
       );
     } finally {
       setParsingResumeId(null);
@@ -399,7 +590,18 @@ export default function ResumesPage() {
       return;
     }
 
+    const errors = validateParsedData(editorData);
+
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setMessageTone("error");
+      setMessage("Fix the validation errors before saving.");
+      return;
+    }
+
     setIsSaving(true);
+    setValidationErrors([]);
+    setMessageTone("default");
     setMessage("Saving parsed resume data...");
 
     try {
@@ -415,6 +617,7 @@ export default function ResumesPage() {
       setEditorData(parsedData);
       setMessage("Resume data saved successfully.");
     } catch (error) {
+      setMessageTone("error");
       setMessage(
         error instanceof Error ? error.message : "Failed to save resume data.",
       );
@@ -428,25 +631,28 @@ export default function ResumesPage() {
     setResumeFile(file);
 
     if (!file) {
+      setMessageTone("error");
       setMessage("Please select a resume first.");
       return;
     }
 
     setIsUploading(true);
+    setMessageTone("default");
     setMessage("Uploading resume...");
 
     try {
       const formData = new FormData();
       formData.append("file", file);
 
-      await apiFetch<{ message: string; data: ResumeItem }>("/resume", {
+      const response = await apiFetch<ResumeWriteResponse>("/resume", {
         method: "POST",
         body: formData,
       });
 
+      upsertResumeInState(response.data);
       setMessage(`Resume uploaded successfully: ${file.name}`);
-      await loadResumes();
     } catch (error) {
+      setMessageTone("error");
       setMessage(
         error instanceof Error ? error.message : "Failed to upload resume.",
       );
@@ -456,148 +662,421 @@ export default function ResumesPage() {
     }
   };
 
+  const handleDeleteResume = async (resume: ResumeItem) => {
+    const confirmed = window.confirm(
+      "Delete this resume and its parsed data permanently?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingResumeId(resume.id);
+    setMessageTone("default");
+    setMessage("Deleting resume...");
+
+    try {
+      await apiFetch<ResumeDeleteResponse>(`/resume/${resume.id}`, {
+        method: "DELETE",
+      });
+
+      setResumes((current) => current.filter((item) => item.id !== resume.id));
+
+      if (activeResumeId === resume.id) {
+        setIsEditorOpen(false);
+        setActiveResumeId(null);
+        setEditorData(emptyParsedData());
+        setValidationErrors([]);
+      }
+
+      setMessage("Resume deleted successfully.");
+    } catch (error) {
+      setMessageTone("error");
+      setMessage(
+        error instanceof Error ? error.message : "Failed to delete resume.",
+      );
+    } finally {
+      setDeletingResumeId(null);
+    }
+  };
+
+  const openReplacePicker = (resumeId: string) => {
+    pendingReplaceResumeId.current = resumeId;
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceResume = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    const resumeId = pendingReplaceResumeId.current;
+
+    pendingReplaceResumeId.current = null;
+    event.target.value = "";
+
+    if (!file || !resumeId) {
+      return;
+    }
+
+    setResumeFile(file);
+    setReuploadingResumeId(resumeId);
+    setMessageTone("default");
+    setMessage("Replacing resume file...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await apiFetch<ResumeWriteResponse>(
+        `/resume/${resumeId}/reupload`,
+        {
+          method: "PUT",
+          body: formData,
+        },
+      );
+
+      upsertResumeInState(response.data);
+
+      if (activeResumeId === resumeId) {
+        setEditorData(emptyParsedData());
+        setValidationErrors([]);
+      }
+
+      setMessage(`Resume replaced successfully: ${file.name}`);
+    } catch (error) {
+      setMessageTone("error");
+      setMessage(
+        error instanceof Error ? error.message : "Failed to replace resume.",
+      );
+    } finally {
+      setReuploadingResumeId(null);
+    }
+  };
+
   return (
     <>
-      <div className="mx-auto min-h-screen max-w-7xl space-y-6 bg-bg p-4 sm:p-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-txt sm:text-2xl">
-              Resumes
-            </h1>
-            <p className="text-sm text-mute sm:text-base">
-              Upload resumes and review everything already stored in your account.
-            </p>
-          </div>
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(234,88,12,0.14),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.16),transparent_28%)]">
+        <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
+          <section className="overflow-hidden rounded-[28px] border border-bd/80 bg-surface shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+            <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.2fr)_360px] lg:p-8">
+              <div className="space-y-5">
+                <div className="inline-flex items-center gap-2 rounded-full border border-prime/20 bg-prime/10 px-3 py-1 text-xs font-medium text-prime">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Resume workspace
+                </div>
 
-          <Button
-            variant="outline"
-            className="border-bd bg-surface text-txt hover:border-prime/40 hover:bg-surface hover:text-prime"
-            onClick={() => void loadResumes()}
-            disabled={isLoading}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
+                <div className="space-y-3">
+                  <h1 className="max-w-2xl text-3xl font-semibold tracking-tight text-txt sm:text-4xl">
+                    Keep every resume polished, parsed, and ready to reuse.
+                  </h1>
+                  <p className="max-w-2xl text-sm leading-6 text-mute sm:text-base">
+                    Upload your latest files, retry failed parsing, and clean up
+                    outdated versions from one place.
+                  </p>
+                </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <Card className="border-bd bg-surface text-txt">
-            <CardHeader>
-              <CardTitle>Upload Resume</CardTitle>
-            </CardHeader>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-bd bg-bg/70 p-4">
+                    <div className="flex items-center gap-2 text-mute">
+                      <Files className="h-4 w-4 text-prime" />
+                      <span className="text-xs font-medium uppercase tracking-[0.18em]">
+                        Total
+                      </span>
+                    </div>
+                    <p className="mt-3 text-2xl font-semibold text-txt">
+                      {resumeStats.total}
+                    </p>
+                  </div>
 
-            <CardContent className="space-y-4">
-              <p className="text-sm text-mute">
-                Add a new PDF, DOC, or DOCX resume to your account.
-              </p>
+                  <div className="rounded-2xl border border-bd bg-bg/70 p-4">
+                    <div className="flex items-center gap-2 text-mute">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <span className="text-xs font-medium uppercase tracking-[0.18em]">
+                        Ready
+                      </span>
+                    </div>
+                    <p className="mt-3 text-2xl font-semibold text-txt">
+                      {resumeStats.parsed}
+                    </p>
+                  </div>
 
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".pdf,.doc,.docx"
-                className="hidden"
-                onChange={handleResumeSelect}
-              />
+                  <div className="rounded-2xl border border-bd bg-bg/70 p-4">
+                    <div className="flex items-center gap-2 text-mute">
+                      {resumeStats.failed > 0 ? (
+                        <XCircle className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <Clock3 className="h-4 w-4 text-amber-600" />
+                      )}
+                      <span className="text-xs font-medium uppercase tracking-[0.18em]">
+                        Attention
+                      </span>
+                    </div>
+                    <p className="mt-3 text-2xl font-semibold text-txt">
+                      {resumeStats.failed + resumeStats.parsing}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Card className="border-bd bg-bg/80 text-txt shadow-none">
+                <CardHeader className="space-y-3">
+                  <div className="inline-flex w-fit items-center gap-2 rounded-full bg-prime/10 px-3 py-1 text-xs font-medium text-prime">
+                    <UploadCloud className="h-3.5 w-3.5" />
+                    Quick upload
+                  </div>
+                  <CardTitle className="text-xl">Add a new resume</CardTitle>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  <p className="text-sm leading-6 text-mute">
+                    PDF, DOC, and DOCX files are supported. Replacing a file will
+                    reset its parsed data so you can start fresh.
+                  </p>
+
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={handleResumeSelect}
+                  />
+                  <input
+                    ref={replaceInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={handleReplaceResume}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={isUploading}
+                    className="group flex w-full flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-prime/35 bg-[linear-gradient(180deg,rgba(234,88,12,0.08),rgba(234,88,12,0.02))] px-5 py-8 text-center transition hover:border-prime/55 hover:bg-[linear-gradient(180deg,rgba(234,88,12,0.12),rgba(234,88,12,0.03))] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <span className="rounded-2xl bg-surface p-3 text-prime shadow-sm">
+                      {isUploading ? (
+                        <LoaderCircle className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <UploadCloud className="h-5 w-5" />
+                      )}
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-txt">
+                        {isUploading ? "Uploading resume..." : "Choose resume file"}
+                      </p>
+                      <p className="text-xs text-mute">
+                        Tap to browse files from your device
+                      </p>
+                    </div>
+                  </button>
+
+                  {resumeFile && (
+                    <div className="rounded-2xl border border-bd bg-surface px-4 py-3">
+                      <p className="text-xs font-medium uppercase tracking-[0.18em] text-mute">
+                        Selected file
+                      </p>
+                      <p className="mt-1 truncate text-sm font-medium text-txt">
+                        {resumeFile.name}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3 text-xs text-mute">
+                    <span>Supported formats: PDF, DOC, DOCX</span>
+                    <span>Max size: 5MB</span>
+                  </div>
+
+                  {message && (
+                    <div
+                      className={`rounded-2xl border px-4 py-3 text-sm ${
+                        messageTone === "error"
+                          ? "border-red-200 bg-red-50 text-red-700"
+                          : "border-bd bg-surface text-mute"
+                      }`}
+                    >
+                      {message}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+
+          <Card className="border-bd bg-surface text-txt shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-xl">Your uploaded resumes</CardTitle>
+                <p className="text-sm text-mute">
+                  Parse, replace, review, and remove resumes without leaving the
+                  dashboard.
+                </p>
+              </div>
 
               <Button
-                className="w-full bg-prime text-bg hover:opacity-90"
-                onClick={() => inputRef.current?.click()}
-                disabled={isUploading}
+                variant="outline"
+                className="border-bd bg-bg text-txt hover:border-prime/40 hover:bg-bg hover:text-prime"
+                onClick={() => void loadResumes({ silent: true })}
+                disabled={isLoading || isRefreshing}
               >
-                <UploadCloud className="mr-2 h-4 w-4" />
-                {isUploading ? "Uploading Resume..." : "Upload Resume"}
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                {isRefreshing ? "Refreshing..." : "Refresh list"}
               </Button>
-
-              {resumeFile && (
-                <p className="text-sm text-prime">Selected: {resumeFile.name}</p>
-              )}
-
-              <p className="text-xs text-mute">
-                Supported formats: PDF, DOC, DOCX
-              </p>
-
-              {message && <p className="text-sm text-mute">{message}</p>}
-            </CardContent>
-          </Card>
-
-          <Card className="border-bd bg-surface text-txt">
-            <CardHeader>
-              <CardTitle>Your Uploaded Resumes</CardTitle>
             </CardHeader>
 
             <CardContent>
               {isLoading ? (
-                <p className="text-sm text-mute">Loading resumes...</p>
+                <div className="flex min-h-56 items-center justify-center rounded-3xl border border-dashed border-bd bg-bg/70">
+                  <div className="flex items-center gap-3 text-sm text-mute">
+                    <LoaderCircle className="h-4 w-4 animate-spin text-prime" />
+                    Loading resumes...
+                  </div>
+                </div>
               ) : resumes.length === 0 ? (
-                <p className="text-sm text-mute">
-                  No resumes found. Upload your first one.
-                </p>
+                <div className="flex min-h-56 flex-col items-center justify-center rounded-3xl border border-dashed border-bd bg-bg/70 px-6 text-center">
+                  <FileText className="h-8 w-8 text-prime" />
+                  <h2 className="mt-4 text-lg font-medium text-txt">
+                    No resumes yet
+                  </h2>
+                  <p className="mt-2 max-w-md text-sm leading-6 text-mute">
+                    Upload your first resume to start parsing and preparing data
+                    for your portfolio.
+                  </p>
+                </div>
               ) : (
-                <div className="space-y-4">
+                <div className="grid gap-4">
                   {resumes.map((resume) => (
-                    <div
+                    <article
                       key={resume.id}
-                      className="flex flex-col gap-4 rounded-xl border border-bd bg-bg p-4 sm:flex-row sm:items-center sm:justify-between"
+                      className="rounded-[24px] border border-bd bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0))] p-5 transition hover:border-prime/30 hover:shadow-[0_18px_35px_rgba(15,23,42,0.06)]"
                     >
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 text-txt">
-                          <FileText className="h-4 w-4 text-prime" />
-                          <span className="font-medium uppercase">
-                            {resume.fileType}
-                          </span>
-                          <span className="rounded-full bg-prime/10 px-2 py-0.5 text-xs font-medium text-prime">
-                            {resume.status}
-                          </span>
-                          {resume.parsedData && (
-                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">
-                              Saved data
+                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 flex-1 space-y-4">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-2 rounded-full bg-bg px-3 py-1.5 text-sm font-medium text-txt">
+                              <FileText className="h-4 w-4 text-prime" />
+                              {resume.fileType.toUpperCase()}
+                            </div>
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusTone(
+                                resume.status,
+                              )}`}
+                            >
+                              {getStatusLabel(resume.status)}
                             </span>
-                          )}
+                            {resume.parsedData && (
+                              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600">
+                                Saved data
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+                            <div className="space-y-2">
+                              <p className="truncate text-sm font-medium text-txt">
+                                {resume.fileUrl}
+                              </p>
+                              <p className="text-sm leading-6 text-mute">
+                                {getStatusMessage(resume)}
+                              </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-bd bg-bg/80 px-4 py-3">
+                              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-mute">
+                                Uploaded
+                              </p>
+                              <p className="mt-2 text-sm font-medium text-txt">
+                                {new Date(resume.uploadedAt).toLocaleString("en-IN", {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                })}
+                              </p>
+                            </div>
+                          </div>
                         </div>
 
-                        <p className="truncate text-sm text-mute">
-                          {resume.fileUrl}
-                        </p>
-
-                        <p className="text-xs text-mute">
-                          Uploaded on{" "}
-                          {new Date(resume.uploadedAt).toLocaleString("en-IN", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          })}
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col gap-3 sm:flex-row">
-                        <Button
-                          variant="outline"
-                          className="border-bd bg-surface text-txt hover:border-prime/40 hover:bg-surface hover:text-prime"
-                          onClick={() => void handleParseResume(resume)}
-                          disabled={parsingResumeId === resume.id}
-                        >
-                          {parsingResumeId === resume.id
-                            ? "Parsing Resume..."
-                            : resume.parsedData
-                              ? "Edit Parsed Data"
-                              : "Parse Data"}
-                        </Button>
-
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="border-bd bg-surface text-txt hover:border-prime/40 hover:bg-surface hover:text-prime"
-                        >
-                          <a
-                            href={resume.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
+                        <div className="grid gap-2 sm:grid-cols-2 xl:w-[360px]">
+                          <Button
+                            variant="outline"
+                            className="border-bd bg-bg text-txt hover:border-prime/40 hover:bg-bg hover:text-prime"
+                            onClick={() => void handleParseResume(resume)}
+                            disabled={
+                              parsingResumeId === resume.id ||
+                              deletingResumeId === resume.id ||
+                              reuploadingResumeId === resume.id
+                            }
                           >
-                            View Resume
-                            <ExternalLink className="ml-2 h-4 w-4" />
-                          </a>
-                        </Button>
+                            {parsingResumeId === resume.id ? (
+                              <>
+                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                Parsing...
+                              </>
+                            ) : resume.parsedData && resume.status === "PARSED" ? (
+                              "Edit data"
+                            ) : resume.status === "FAILED" ? (
+                              "Retry parse"
+                            ) : (
+                              "Parse data"
+                            )}
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            className="border-bd bg-bg text-txt hover:border-prime/40 hover:bg-bg hover:text-prime"
+                            onClick={() => openReplacePicker(resume.id)}
+                            disabled={
+                              parsingResumeId === resume.id ||
+                              deletingResumeId === resume.id ||
+                              reuploadingResumeId === resume.id
+                            }
+                          >
+                            {reuploadingResumeId === resume.id ? (
+                              <>
+                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                Replacing...
+                              </>
+                            ) : (
+                              "Replace file"
+                            )}
+                          </Button>
+
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="border-bd bg-bg text-txt hover:border-prime/40 hover:bg-bg hover:text-prime"
+                          >
+                            <a
+                              href={resume.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              View file
+                              <ExternalLink className="ml-2 h-4 w-4" />
+                            </a>
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            className="border-bd bg-bg text-txt hover:border-red-400/40 hover:bg-bg hover:text-red-600"
+                            onClick={() => void handleDeleteResume(resume)}
+                            disabled={
+                              parsingResumeId === resume.id ||
+                              deletingResumeId === resume.id ||
+                              reuploadingResumeId === resume.id
+                            }
+                          >
+                            {deletingResumeId === resume.id ? (
+                              <>
+                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              "Delete"
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    </article>
                   ))}
                 </div>
               )}
@@ -611,7 +1090,7 @@ export default function ResumesPage() {
           side="right"
           className="w-full overflow-y-auto border-l border-bd bg-surface text-txt sm:max-w-3xl"
         >
-          <SheetHeader className="border-b border-bd">
+          <SheetHeader className="sticky top-0 z-10 border-b border-bd bg-surface/95 px-1 backdrop-blur">
             <SheetTitle>Resume Data Editor</SheetTitle>
             <SheetDescription>
               Review parsed data, update any field you want, and save it for later.
@@ -619,6 +1098,24 @@ export default function ResumesPage() {
           </SheetHeader>
 
           <div className="space-y-6 p-4">
+            {validationErrors.length > 0 && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Resolve these issues before saving:
+                    </p>
+                    <ul className="list-disc space-y-1 pl-4 text-sm">
+                      {validationErrors.map((error) => (
+                        <li key={error}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <label className="text-sm font-medium text-txt">Full Name</label>
@@ -1291,7 +1788,7 @@ export default function ResumesPage() {
             </div>
           </div>
 
-          <SheetFooter className="border-t border-bd bg-surface">
+          <SheetFooter className="sticky bottom-0 border-t border-bd bg-surface/95 backdrop-blur">
             <div className="flex w-full items-center justify-between gap-3">
               <p className="text-xs text-mute">
                 {activeResume

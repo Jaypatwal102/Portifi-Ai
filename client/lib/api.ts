@@ -26,7 +26,7 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || "Something went wrong");
+    throw new Error(error.error || error.message || "Something went wrong");
   }
 
   return res.json();
